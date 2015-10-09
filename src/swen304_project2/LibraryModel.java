@@ -39,6 +39,11 @@ public class LibraryModel {
 		}
     }
 
+    /**
+     * Displays information about a specific book if it's in the database
+     * @param isbn
+     * @return
+     */
     public String bookLookup(int isbn) {
 
     	String select = "SELECT * FROM Book Natural Join Book_Author Natural Join Author"
@@ -79,7 +84,6 @@ public class LibraryModel {
 					"\t Edition: " + j_editionnumber + " - Number of copies: " + j_copies + " - Copies left: " + j_noLeft + "\n" +
 					"\t Authors: " + finalRow;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -87,6 +91,10 @@ public class LibraryModel {
     	return "Unable to look up book";
     }
 
+    /**
+     * Displays all the books in the database
+     * @return
+     */
     public String showCatalogue() {
 
     	String select = "SELECT * FROM Book Natural Join Book_Author Natural Join Author order by isbn";
@@ -135,7 +143,6 @@ public class LibraryModel {
 
 			return finalString;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -193,7 +200,41 @@ public class LibraryModel {
     }
 
     public String showCustomer(int customerID) {
-	return "Show Customer Stub";
+    	String select = "SELECT * FROM customer"
+			      + " WHERE customerid="+customerID;
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			int id = -1;
+			String fname = "";
+			String lname = "";
+			String city= "";
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				id = rs.getInt("customerid");
+				fname = rs.getString("f_name").trim();
+				lname = rs.getString("l_name").trim();
+				city = rs.getString("city").trim();
+			}
+
+			String customer = "Show Customer: \n" +
+					"\t " + id+ ": " + lname + ", " + fname + " - " + city + "\n";
+
+			// TODO
+			// if the customer has books, borrow books
+
+			return customer;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+    	return "Show Customer Stub";
     }
 
     public String showAllCustomers() {
