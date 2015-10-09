@@ -134,11 +134,11 @@ public class LibraryModel {
 		}
 
 
-    	return "Wrong ID";
+    	return "AuthorID does not exist!";
     }
 
     public String showAllAuthors() {
-	return "Show All Authors Stub";
+    	return "dfo";
     }
 
     public String showCustomer(int customerID) {
