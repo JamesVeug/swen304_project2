@@ -138,7 +138,45 @@ public class LibraryModel {
     }
 
     public String showAuthor(int authorID) {
-	return "Show Author Stub";
+
+    	String select = "SELECT * FROM Author Natural Join Book_Author Natural Join Book"
+    			      + " WHERE authorid="+authorID;
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			String q_name = "";
+			String q_surname = "";
+			List<Integer> isbn_list = new ArrayList<>();
+			List<String> title_list = new ArrayList<>();
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				q_name = rs.getString("name").trim();
+				q_surname = rs.getString("surname").trim();
+				isbn_list.add(rs.getInt("isbn"));
+				title_list.add(rs.getString("title").trim());
+			}
+
+
+			String finalRow = "";
+			for (int i = 0; i < isbn_list.size(); i++) {
+				finalRow += isbn_list.get(i) + " - " + title_list.get(i) + "\n";
+			}
+
+			return "Show Author:\n" + authorID + " - " + q_name + " " + q_surname +
+					"\nBooks written:\n" + finalRow;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+    	return "Wrong ID";
     }
 
     public String showAllAuthors() {
