@@ -232,6 +232,11 @@ public class LibraryModel {
     	return "No authors in database!";
     }
 
+    /**
+     * Shows the information regarding a custom and the customers borrowed books
+     * @param customerID
+     * @return
+     */
     public String showCustomer(int customerID) {
     	String select = "SELECT * FROM customer"
 			      + " WHERE customerid="+customerID;
@@ -277,15 +282,16 @@ public class LibraryModel {
     public String borrowBook(int isbn, int customerID,
 			     int day, int month, int year) {
 
+    	String date = day + "-" + month + "-" + year;
 
-
-    	String insert="INSERT INTO Grades " +
-    			"VALUES (007007,’C305’,’A+’)";
+    	String insert="INSERT INTO cust_book " +
+    			"VALUES ("+isbn+",'"+date+"',"+customerID+")";
 
     	Statement stmt;
 		try {
 			stmt = con.createStatement();
 			int return_value = stmt.executeUpdate(insert);
+			return "Something";
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
