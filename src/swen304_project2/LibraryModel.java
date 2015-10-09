@@ -10,7 +10,11 @@ package swen304_project2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JFrame;
 
@@ -36,6 +40,48 @@ public class LibraryModel {
     }
 
     public String bookLookup(int isbn) {
+
+    	String select = "SELECT * FROM Book Natural Join Book_Author Natural Join Author"
+    			      + " WHERE ISBN="+isbn;
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			int j_isbn = -1;
+			String j_title = "";
+			int j_copies = -1;
+			int j_noLeft = -1;
+			int j_editionnumber = -1;
+			List<String> list = new ArrayList<>();
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				j_isbn = rs.getInt("isbn");
+				j_title = rs.getString("title");
+				j_copies = rs.getInt("numofcop");
+				j_noLeft = rs.getInt("numleft");
+				j_editionnumber = rs.getInt("edition_no");
+				list.add(rs.getString("surname").trim());
+			}
+
+
+			String finalRow = list.get(0);
+			for(int i = 1; i < list.size(); i++){
+				finalRow += ", " +list.get(i);
+			}
+
+			return "Book Lookup: \n" +
+					"\t Isbn: " + j_isbn + ": " + j_title.trim() + "\n" +
+					"\t Edition: " + j_editionnumber + " - Number of copies: " + j_copies + " - Copies left: " + j_noLeft + "\n" +
+					"\t Authors: " + finalRow;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 
 
     	return "Lookup Book Stub";
@@ -67,6 +113,21 @@ public class LibraryModel {
 
     public String borrowBook(int isbn, int customerID,
 			     int day, int month, int year) {
+
+
+
+    	String insert="INSERT INTO Grades " +
+    			"VALUES (007007,’C305’,’A+’)";
+
+    	Statement stmt;
+		try {
+			stmt = con.createStatement();
+			int return_value = stmt.executeUpdate(insert);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+
 	return "Borrow Book Stub";
     }
 
