@@ -107,20 +107,29 @@ public class LibraryModel {
 				// extracting data from rs tuples
 				// data processing
 
-				isbns.add(rs.getInt("isbn"));
-				titles.add(rs.getString("title").trim());
-				copies.add(rs.getInt("numofcop"));
-				noLefts.add(rs.getInt("numleft"));
-				editions.add(rs.getInt("edition_no"));
-				surnames.add(rs.getString("surname").trim());
+				int isbn = rs.getInt("isbn");
+				if( !isbns.contains(isbn) ){
+					isbns.add(isbn);
+					titles.add(rs.getString("title").trim());
+					copies.add(rs.getInt("numofcop"));
+					noLefts.add(rs.getInt("numleft"));
+					editions.add(rs.getInt("edition_no"));
+					surnames.add(rs.getString("surname").trim());
+				}
+				else{
+					int index = isbns.indexOf(isbn);
+
+					String surname = rs.getString("surname").trim();
+					surnames.set(index, surnames.get(index) + ", " + surname);
+				}
 			}
 
-			String finalString = "";
+			String finalString = "Show Catalogue: \n\n";
 			for( int i = 0; i < isbns.size(); i++ ){
 				finalString +=
 						"Isbn: " + isbns.get(i) + ": " + titles.get(i) + "\n" +
 						"\t Edition: " + editions.get(i) + " - Number of copies: " + copies.get(i) + " - Copies left: " + noLefts.get(i) + "\n" +
-						"\t Authors: " + surnames.get(i);
+						"\t Authors: " + surnames.get(i) + "\n";
 
 			}
 
@@ -130,7 +139,7 @@ public class LibraryModel {
 			e.printStackTrace();
 		}
 
-    	return "Show Catalogue Stub";
+    	return "Can not Show Catalogue";
     }
 
     public String showLoanedBooks() {
