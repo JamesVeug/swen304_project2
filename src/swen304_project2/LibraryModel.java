@@ -222,7 +222,7 @@ public class LibraryModel {
 		}
 
 
-    	return "AuthorID does not exist!";
+    	return "No authors in database!";
     }
 
     public String showCustomer(int customerID) {
