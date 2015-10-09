@@ -84,11 +84,53 @@ public class LibraryModel {
 		}
 
 
-    	return "Lookup Book Stub";
+    	return "Unable to look up book";
     }
 
     public String showCatalogue() {
-	return "Show Catalogue Stub";
+
+    	String select = "SELECT * FROM Book Natural Join Book_Author Natural Join Author order by isbn";
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			List<Integer> isbns = new ArrayList<>();
+			List<String> titles = new ArrayList<>();
+			List<Integer> copies = new ArrayList<>();
+			List<Integer> noLefts = new ArrayList<>();
+			List<Integer> editions = new ArrayList<>();
+			List<String> surnames = new ArrayList<>();
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				isbns.add(rs.getInt("isbn"));
+				titles.add(rs.getString("title").trim());
+				copies.add(rs.getInt("numofcop"));
+				noLefts.add(rs.getInt("numleft"));
+				editions.add(rs.getInt("edition_no"));
+				surnames.add(rs.getString("surname").trim());
+			}
+
+			String finalString = "";
+			for( int i = 0; i < isbns.size(); i++ ){
+				finalString +=
+						"Isbn: " + isbns.get(i) + ": " + titles.get(i) + "\n" +
+						"\t Edition: " + editions.get(i) + " - Number of copies: " + copies.get(i) + " - Copies left: " + noLefts.get(i) + "\n" +
+						"\t Authors: " + surnames.get(i);
+
+			}
+
+			return finalString;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+    	return "Show Catalogue Stub";
     }
 
     public String showLoanedBooks() {
