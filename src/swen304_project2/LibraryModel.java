@@ -180,7 +180,40 @@ public class LibraryModel {
     }
 
     public String showAllAuthors() {
-    	return "dfo";
+
+    	String select = "SELECT * FROM Author";
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			int q_id = -1;
+			String q_name = "";
+			String q_surname = "";
+
+			String result = "Show All Authors:\n";
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				q_id = rs.getInt("authorid");
+				q_name = rs.getString("name").trim();
+				q_surname = rs.getString("surname").trim();
+
+				result += "\t" + q_id + ": " + q_surname + ", " + q_name + "\n";
+
+			}
+
+			return result;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+    	return "AuthorID does not exist!";
     }
 
     public String showCustomer(int customerID) {
