@@ -35,8 +35,6 @@ public class LibraryModel {
 		}
     }
 
-    // ijhfg
-
     public String bookLookup(int isbn) {
 
 
