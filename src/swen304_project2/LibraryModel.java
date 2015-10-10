@@ -576,8 +576,8 @@ public class LibraryModel {
 	}
 
 	public String returnBook(int isbn, int customerid) {
-	return "Return Book Stub";
-    }
+		return "";
+	}
 
     public void closeDBConnection() {
     }
