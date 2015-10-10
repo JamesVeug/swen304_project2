@@ -47,7 +47,7 @@ public class LibraryModel {
     public String bookLookup(int isbn) {
 
     	String select = "SELECT * FROM Book Natural Join Book_Author Natural Join Author"
-    			      + " WHERE ISBN="+isbn;
+    			      + " WHERE ISBN="+isbn + " ORDER BY authorid";
 
 
 		try {
