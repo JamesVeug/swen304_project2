@@ -10,6 +10,7 @@ package swen304_project2;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -360,7 +361,6 @@ public class LibraryModel {
     	return "No customers in database!";
     }
 
-
     /**
      * Attempte borrowing a book
      * @param isbn
@@ -373,6 +373,8 @@ public class LibraryModel {
     public String borrowBook(int isbn, int customerID,
 			     int day, int month, int year) {
 
+    	String error = null;
+
     	String date = day + "-" + month + "-" + year;
 
     	// Check if customer exists
@@ -383,43 +385,151 @@ public class LibraryModel {
     		return checkCustomerExists;
     	}
 
+    	// Save for reassigning
+    	int originalIsolation = 0;
+    	try {
+			originalIsolation = con.getTransactionIsolation();
+		} catch (SQLException e2) {e2.printStackTrace();}
 
 
     	// Attempt to Borrow the book
+    	PreparedStatement update_stmt = null; // Update numLeft
+    	PreparedStatement select_stmt = null; // Checking numLeft of book in table
+    	PreparedStatement insert_stmt = null; // Inserting new elements into table
 		try {
 
+			//
+			// Insert into cust_books
+			//
 	    	String insert="INSERT INTO cust_book " + "VALUES ("+isbn+",'"+date+"',"+customerID+")";
-			Statement stmt = con.createStatement();
-			int changedRows = stmt.executeUpdate(insert);
+
+	    	con.setAutoCommit(false);
+	    	con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+	    	insert_stmt = con.prepareStatement(insert);
+	    	int insertChanges = insert_stmt.executeUpdate();
+	    	con.commit();
 
 
-			if( changedRows == 0 ){
-				// Did not insert
-				return "Failed borrow";
-			}
-			else{
-				// Successful insert
-				return "Cuccessfully Borrowed with " + changedRows + " rows modified.";
-			}
-		} catch (SQLException e) {
+			// Successful insert
+	    	if( insertChanges == 0 ){
+	    		throw new RuntimeException("Failed to Borrow book.");
+	    	}
+
+
+	    	//
+	    	// Select numLeft of book
+	    	//
+	    	String getNumLeft = "SELECT numLeft from book where isbn= " + isbn;
+	    	select_stmt = con.prepareStatement(getNumLeft);
+	    	con.commit();
+
+	    	ResultSet rs = select_stmt.executeQuery();
+	    	int numLeft = -1;
+	    	while(rs.next()){
+	    		numLeft = rs.getInt("numLeft");
+	    	}
+
+	    	// Make sure we have boosk available
+	    	if( numLeft < 1 ){
+	    		throw new RuntimeException("No books available for this book.");
+	    	}
+	    	numLeft--;
+
+
+	    	//
+	    	// Update Book num left
+	    	//
+	    	String update = "UPDATE book set numLeft="+numLeft+" where isbn = " + isbn;
+	    	update_stmt = con.prepareStatement(update);
+
+	    	int updateChanges = update_stmt.executeUpdate();
+
+	    	// Successful update
+	    	if( updateChanges == 0 ){
+	    		throw new RuntimeException("Failed to Reduce number of copies left.");
+	    	}
+	    	else{
+	    		error = "Successfuly borrowed book.";
+	    		error += "\t" + numLeft + " copies left.";
+		    	con.commit();
+	    	}
+
+	    	popupDialog();
+
+		} catch (Exception e) {
+
+			// Display proper message
 			String message = e.getMessage().trim();
 			if( message.startsWith("ERROR: duplicate key value violates unique constraint \"cust_book_pkey\"")){
-				return "Book with isbn " + isbn + " is already being borrowed.";
+				error = "Book with isbn " + isbn + " is already being borrowed.";
 			}
 			else if( message.startsWith("ERROR: insert or update on table \"cust_book\" violates foreign key constraint")){
-				return "Book with isbn " + isbn + " does not exist.";
+				error = "Book with isbn " + isbn + " does not exist.";
 			}
 			else{
 				System.out.println("Message '" + e.getMessage() + "'");
 				e.printStackTrace();
+				error = message;
+			}
+
+			// Rollback
+			try {
+				if(con != null ){
+					con.rollback();
+				}
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+				error += "\n Failed to rollback";
+			}
+		}
+		finally{
+
+			// Close statements
+			if( insert_stmt != null ){
+				try {
+					insert_stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					error += "\n Failed to close insert statement.";
+				}
+			}
+			if( update_stmt != null ){
+				try {
+					update_stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					error += "\n Failed to close update statement.";
+				}
+			}
+
+			// Reassign autocommit to true
+			try {
+				con.setAutoCommit(true);
+			} catch (SQLException e) {
+				e.printStackTrace();
+				error += "\n Failed to assign connetion to AutoCommit(true).";
+			}
+
+			// Reassign isolation
+			try {
+				con.setTransactionIsolation(originalIsolation);
+			} catch (SQLException e) {
+				e.printStackTrace();
+				error += "\n Could not reassign isolation";
 			}
 		}
 
 
-	return "Unable to borrow book";
+		return error;
     }
 
-    public String returnBook(int isbn, int customerid) {
+    private void popupDialog() {
+		//JFrame frame = new JFrame("PAUSED");
+		//frame.setSize()
+
+	}
+
+	public String returnBook(int isbn, int customerid) {
 	return "Return Book Stub";
     }
 
