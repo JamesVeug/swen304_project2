@@ -13,10 +13,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.text.Document;
 import javax.swing.text.BadLocationException;
+
+import org.postgresql.util.PSQLException;
 
 import static java.awt.event.KeyEvent.VK_E;
 import static java.awt.event.KeyEvent.VK_T;
@@ -92,7 +95,14 @@ public class LibraryUI extends JFrame {
 	String password = ad.getDatabasePassword();
 
 	// Create data model
-        model = new LibraryModel(this, userName, password);
+        try {
+        	model = new LibraryModel(this, userName, password);
+        }
+        catch (Exception e) {
+        	JOptionPane.showMessageDialog(null, "Error: Incorrect username or password");
+        	new LibraryUI();
+        	return;
+        }
 
 	// Center window on screen
 	GraphicsEnvironment ge =
