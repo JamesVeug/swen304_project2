@@ -48,21 +48,13 @@ public class LibraryModel {
     private JFrame dialogParent;
     private Connection con = null;
 
-    public LibraryModel(JFrame parent, String userid, String password) {
+    public LibraryModel(JFrame parent, String userid, String password) throws Exception {
     	dialogParent = parent;
 
     	String url = "jdbc:postgresql://db.ecs.vuw.ac.nz/"+userid+"_jdbc";
 
-    	try {
 			Class.forName("org.postgresql.Driver");
 			con = DriverManager.getConnection(url, userid,password);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-    	//popupDialog();
     }
 
     /**
