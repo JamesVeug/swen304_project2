@@ -150,7 +150,7 @@ public class LibraryModel {
     }
 
     public String showLoanedBooks() {
-	return "Show Loaned Books Stub";
+    	return bookLookup(1111);
     }
 
     public String showAuthor(int authorID) {
