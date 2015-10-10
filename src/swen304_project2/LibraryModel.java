@@ -151,7 +151,59 @@ public class LibraryModel {
     }
 
     public String showLoanedBooks() {
-	return "Show Loaned Books Stub";
+
+    	String select = "SELECT * FROM Customer Natural Join Cust_Book Natural Join"
+    			+ " Book Natural Join Book_Author Natural Join Author"
+    			      + " ORDER BY authorid";
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			int j_isbn = -1;
+			String j_title = "";
+			int j_copies = -1;
+			int j_noLeft = -1;
+			int j_editionnumber = -1;
+			int j_custid = -1;
+			String j_l_name = "";
+			String j_f_name = "";
+			String j_city = "";
+			List<String> list = new ArrayList<>();
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				j_isbn = rs.getInt("isbn");
+				j_title = rs.getString("title");
+				j_copies = rs.getInt("numofcop");
+				j_noLeft = rs.getInt("numleft");
+				j_editionnumber = rs.getInt("edition_no");
+				list.add(rs.getString("surname").trim());
+				j_custid = rs.getInt("customerid");
+				j_l_name = rs.getString("l_name");
+				j_f_name = rs.getString("f_name");
+				j_city = rs.getString("city");
+			}
+
+
+			String finalRow = list.get(0);
+			for(int i = 1; i < list.size(); i++){
+				finalRow += ", " +list.get(i);
+			}
+
+			return "Show Loaned Books: \n \n" +
+					"\t Isbn: " + j_isbn + ": " + j_title.trim() + "\n" +
+					"\t Edition: " + j_editionnumber + " - Number of copies: " + j_copies + " - Copies left: " + j_noLeft + "\n" +
+					"\t Authors: " + finalRow + "\n\t Borrowers:\n" + "\t\t" + j_custid+ ": " + j_l_name.trim() + ", " + j_f_name.trim() + " - " + j_city.trim() + "\n";
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+
+    	return "Unable to look up book";
     }
 
     public String showAuthor(int authorID) {
