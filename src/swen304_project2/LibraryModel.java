@@ -276,7 +276,44 @@ public class LibraryModel {
     }
 
     public String showAllCustomers() {
-	return "Show All Customers Stub";
+
+    	String select = "SELECT * FROM Customer";
+
+
+		try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(select);
+
+			int q_id = -1;
+			String q_l_name = "";
+			String q_f_name = "";
+			String q_city = "";
+
+			String result = "Show All Authors:\n";
+
+			while (rs.next()){
+				// extracting data from rs tuples
+				// data processing
+
+				q_id = rs.getInt("customerid");
+				q_l_name = rs.getString("l_name").trim();
+				q_f_name = rs.getString("f_name").trim();
+				q_city = rs.getString("city");
+				if (q_city == null) q_city = "(no city)";
+				else q_city = q_city.trim();
+
+				result += "\t" + q_id + ": " + q_l_name + ", " + q_f_name + " - " + q_city + "\n";
+
+			}
+
+			return result;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+    	return "No customers in database!";
     }
 
     public String borrowBook(int isbn, int customerID,
