@@ -261,11 +261,20 @@ public class LibraryModel {
 				city = rs.getString("city").trim();
 			}
 
-			String customer = "Show Customer: \n" +
-					"\t " + id+ ": " + lname + ", " + fname + " - " + city + "\n";
 
-			// TODO
-			// if the customer has books, borrow books
+			// Display message if not found
+			String customer = "Customer with id " + customerID + " does not exist.";
+			if( id != -1 ){
+				customer = "Show Customer: \n" +
+						"\t " + id+ ": " + lname + ", " + fname + " - " + city + "\n";
+
+
+				String booksBorrowed = getBorrowedBooks(customerID);
+				customer += "\t" +booksBorrowed;
+
+				// if the customer has books, borrow books
+			}
+
 
 			return customer;
 		} catch (SQLException e) {
@@ -273,6 +282,41 @@ public class LibraryModel {
 		}
 
     	return "Show Customer Stub";
+    }
+
+    /**
+     * Returns a string containing the books the customer has borrowed, otherwise a message saying (No books borrowed)
+     * @param customerID
+     * @return
+     */
+    public String getBorrowedBooks(int customerID){
+
+    	String selectBooks = "SELECT isbn,title from cust_book Natural Join book where customerID=" + customerID;
+    	try {
+			Statement stmt = con.createStatement();
+			ResultSet rs = stmt.executeQuery(selectBooks);
+
+			String bookList = "Books Borrowed:";
+			int bookCount = 0;
+			while(rs.next()){
+				String isbn = rs.getString("isbn");
+				String title = rs.getString("title");
+
+				bookList += "\n\t\t" + isbn + " - " + title;
+				bookCount++;
+			}
+
+			if( bookCount > 0 ){
+				return bookList;
+			}
+			else{
+				return "(No books borrowed)";
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+
+    	return "Could not get borrowed books.";
     }
 
     public String showAllCustomers() {
@@ -316,25 +360,63 @@ public class LibraryModel {
     	return "No customers in database!";
     }
 
+
+    /**
+     * Attempte borrowing a book
+     * @param isbn
+     * @param customerID
+     * @param day
+     * @param month
+     * @param year
+     * @return
+     */
     public String borrowBook(int isbn, int customerID,
 			     int day, int month, int year) {
 
     	String date = day + "-" + month + "-" + year;
 
-    	String insert="INSERT INTO cust_book " +
-    			"VALUES ("+isbn+",'"+date+"',"+customerID+")";
+    	// Check if customer exists
+    	String checkCustomerExists = showCustomer(customerID);
+    	if( checkCustomerExists.startsWith("Customer with id")){
 
-    	Statement stmt;
+    		// Customer does not exist
+    		return checkCustomerExists;
+    	}
+
+
+
+    	// Attempt to Borrow the book
 		try {
-			stmt = con.createStatement();
-			int return_value = stmt.executeUpdate(insert);
-			return "Something";
+
+	    	String insert="INSERT INTO cust_book " + "VALUES ("+isbn+",'"+date+"',"+customerID+")";
+			Statement stmt = con.createStatement();
+			int changedRows = stmt.executeUpdate(insert);
+
+
+			if( changedRows == 0 ){
+				// Did not insert
+				return "Failed borrow";
+			}
+			else{
+				// Successful insert
+				return "Cuccessfully Borrowed with " + changedRows + " rows modified.";
+			}
 		} catch (SQLException e) {
-			e.printStackTrace();
+			String message = e.getMessage().trim();
+			if( message.startsWith("ERROR: duplicate key value violates unique constraint \"cust_book_pkey\"")){
+				return "Book with isbn " + isbn + " is already being borrowed.";
+			}
+			else if( message.startsWith("ERROR: insert or update on table \"cust_book\" violates foreign key constraint")){
+				return "Book with isbn " + isbn + " does not exist.";
+			}
+			else{
+				System.out.println("Message '" + e.getMessage() + "'");
+				e.printStackTrace();
+			}
 		}
 
 
-	return "Borrow Book Stub";
+	return "Unable to borrow book";
     }
 
     public String returnBook(int isbn, int customerid) {
