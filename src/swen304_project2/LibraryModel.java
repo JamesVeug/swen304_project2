@@ -8,6 +8,18 @@ package swen304_project2;
 
 
 
+import static javax.swing.BoxLayout.X_AXIS;
+import static javax.swing.JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT;
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+import static javax.swing.JOptionPane.showMessageDialog;
+import static javax.swing.KeyStroke.getKeyStroke;
+
+import java.awt.BorderLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -17,7 +29,18 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.AbstractAction;
+import javax.swing.ActionMap;
+import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.InputMap;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
 public class LibraryModel {
 
@@ -496,11 +519,9 @@ public class LibraryModel {
 	    	}
 	    	else{
 	    		error = "Successfuly borrowed book.";
-	    		error += "\t" + numLeft + " copies left.";
+	    		error += "\n\t" + numLeft + " copies left.";
 		    	con.commit();
 	    	}
-
-	    	popupDialog();
 
 		} catch (Exception e) {
 
@@ -572,7 +593,15 @@ public class LibraryModel {
     private void popupDialog() {
 		//JFrame frame = new JFrame("PAUSED");
 		//frame.setSize()
-
+    	PauseDialog d = new PauseDialog();
+    	while(d.isVisible()){
+    		try {
+				Thread.sleep(10);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
 	}
 
 	public String returnBook(int isbn, int customerid) {
@@ -592,5 +621,90 @@ public class LibraryModel {
 
     public String deleteBook(int isbn) {
     	return "Delete Book";
+    }
+
+    class PauseDialog extends JDialog {
+        private boolean okButtonClicked = false;
+
+        String introText = "Press okay to unpause the program";
+        private JPanel dialogPanel = new JPanel();
+        private JPanel labelPanel = new JPanel();
+        private JPanel inputPanel = new JPanel();
+
+        public PauseDialog() {
+    	this(null, "Paused", false);
+        }
+
+        public PauseDialog(JFrame parent) {
+    	this(parent, "Paused", true);
+        }
+
+        public PauseDialog(JFrame parent, String title) {
+    	this(parent, title, true);
+        }
+
+        public PauseDialog(final JFrame parent, String title, boolean modal) {
+    	super(parent, title, modal);
+
+    	// Set up close behaviour
+    	setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+    	addWindowListener(new WindowAdapter() {
+    		public void windowClosing(WindowEvent e) {
+    		    if (!okButtonClicked)
+    			System.exit(0);
+    		}
+    	    });
+
+    	// Set up OK button behaviour
+    	JButton okButton = new JButton("OK");
+    	okButton.addActionListener(new ActionListener() {
+    		public void actionPerformed(ActionEvent e) {
+    		    okButtonClicked = true;
+    		    setVisible(false);
+    		}
+    	    });
+
+    	// Set up dialog contents
+    	labelPanel.setBorder(BorderFactory.createEmptyBorder(20,20,5,5));
+    	inputPanel.setBorder(BorderFactory.createEmptyBorder(20,5,5,20));
+
+    	labelPanel.setLayout(new GridLayout(2, 1));
+    	inputPanel.setLayout(new GridLayout(2, 1));
+
+    	Box buttonPane = new Box(X_AXIS);
+    	buttonPane.add(Box.createHorizontalGlue());
+    	buttonPane.add(okButton);
+    	buttonPane.add(Box.createHorizontalStrut(5));
+    	buttonPane.add(Box.createHorizontalGlue());
+    	buttonPane.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+
+    	JLabel introLabel = new JLabel(introText);
+    	introLabel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+    	getContentPane().add(introLabel, BorderLayout.NORTH);
+    	getContentPane().add(labelPanel, BorderLayout.WEST);
+    	getContentPane().add(inputPanel, BorderLayout.CENTER);
+    	getContentPane().add(buttonPane, BorderLayout.SOUTH);
+
+    	// Ensure the enter key triggers the OK button
+    	getRootPane().setDefaultButton(okButton);
+
+    	// And that the escape key exits
+    	InputMap inputMap =
+    	    getRootPane().getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    	ActionMap actionMap = getRootPane().getActionMap();
+    	inputMap.put(getKeyStroke("ESCAPE"), "exitAction");
+    	actionMap.put("exitAction", new AbstractAction() {
+    		public void actionPerformed(ActionEvent e) {
+    		    System.exit(0);
+    		}
+    	    });
+
+    	// Pack it all
+    	pack();
+
+    	// Center on the screen
+    	setLocationRelativeTo(null);
+    	setVisible(true);
+        }
     }
 }
