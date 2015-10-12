@@ -10,8 +10,6 @@ package swen304_project2;
 
 import static javax.swing.BoxLayout.X_AXIS;
 import static javax.swing.JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT;
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
-import static javax.swing.JOptionPane.showMessageDialog;
 import static javax.swing.KeyStroke.getKeyStroke;
 
 import java.awt.BorderLayout;
@@ -39,14 +37,13 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 
 public class LibraryModel {
 
     // For use in creating dialogs and making them modal
     private JFrame dialogParent;
     private Connection con = null;
+    private boolean paused = false;
 
     public LibraryModel(JFrame parent, String userid, String password) throws Exception {
     	dialogParent = parent;
@@ -55,6 +52,8 @@ public class LibraryModel {
 
 			Class.forName("org.postgresql.Driver");
 			con = DriverManager.getConnection(url, userid,password);
+
+
     }
 
     /**
@@ -568,6 +567,14 @@ public class LibraryModel {
 					error += "\n Failed to close update statement.";
 				}
 			}
+			if( select_stmt != null ){
+				try {
+					select_stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					error += "\n Failed to close select statement.";
+				}
+			}
 
 			// Reassign autocommit to true
 			try {
@@ -590,22 +597,157 @@ public class LibraryModel {
 		return error;
     }
 
-    private void popupDialog() {
-		//JFrame frame = new JFrame("PAUSED");
-		//frame.setSize()
+    public void popupDialog() {
+    	setPaused(true);
     	PauseDialog d = new PauseDialog();
-    	while(d.isVisible()){
-    		try {
-				Thread.sleep(10);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	}
 	}
 
+    /**
+     * Return book to the library
+     * @param isbn
+     * @param customerid
+     * @return
+     */
 	public String returnBook(int isbn, int customerid) {
-		return "";
+		String error = null;
+
+    	// Check if customer exists
+    	String checkCustomerExists = showCustomer(customerid);
+    	if( checkCustomerExists.startsWith("Customer with id")){
+
+    		// Customer does not exist
+    		return checkCustomerExists;
+    	}
+
+    	// Save for reassigning
+    	int originalIsolation = 0;
+    	try {
+			originalIsolation = con.getTransactionIsolation();
+		} catch (SQLException e2) {e2.printStackTrace();}
+
+
+    	// Attempt to Borrow the book
+    	PreparedStatement update_stmt = null; // Update numLeft
+    	PreparedStatement select_stmt = null; // Checking numLeft of book in table
+    	PreparedStatement insert_stmt = null; // Inserting new elements into table
+		try {
+
+			//
+			// Insert into cust_books
+			//
+	    	String delete="DELETE FROM cust_book " + "WHERE isbn="+isbn+",AND customerid="+customerid+")";
+
+	    	con.setAutoCommit(false);
+	    	con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+	    	insert_stmt = con.prepareStatement(delete);
+	    	int deleteChanges = insert_stmt.executeUpdate();
+	    	con.commit();
+
+
+			// Successful insert
+	    	if( deleteChanges == 0 ){
+	    		throw new RuntimeException("Failed to Return book.");
+	    	}
+
+
+	    	//
+	    	// Select numLeft of book
+	    	//
+	    	String getNumLeft = "SELECT numLeft from book where isbn= " + isbn;
+	    	select_stmt = con.prepareStatement(getNumLeft);
+	    	con.commit();
+
+	    	ResultSet rs = select_stmt.executeQuery();
+	    	int numLeft = -1;
+	    	while(rs.next()){
+	    		numLeft = rs.getInt("numLeft");
+	    	}
+	    	numLeft++;
+
+
+	    	//
+	    	// Update Book num left
+	    	//
+	    	String update = "UPDATE book set numLeft="+numLeft+" where isbn = " + isbn;
+	    	update_stmt = con.prepareStatement(update);
+
+	    	int updateChanges = update_stmt.executeUpdate();
+
+	    	// Successful update
+	    	if( updateChanges == 0 ){
+	    		throw new RuntimeException("Failed to Increase number of copies left.");
+	    	}
+	    	else{
+	    		error = "Successfuly returned book.";
+	    		error += "\n\t" + numLeft + " copies left.";
+		    	con.commit();
+	    	}
+
+		} catch (Exception e) {
+
+			// Display proper message
+			String message = e.getMessage().trim();
+			System.out.println("Message '" + e.getMessage() + "'");
+			e.printStackTrace();
+			error = message;
+
+			// Rollback
+			try {
+				if(con != null ){
+					con.rollback();
+				}
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+				error += "\n Failed to rollback";
+			}
+		}
+		finally{
+
+			// Close statements
+			if( insert_stmt != null ){
+				try {
+					insert_stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					error += "\n Failed to close insert statement.";
+				}
+			}
+			if( update_stmt != null ){
+				try {
+					update_stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					error += "\n Failed to close update statement.";
+				}
+			}
+			if( select_stmt != null ){
+				try {
+					select_stmt.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+					error += "\n Failed to close select statement.";
+				}
+			}
+
+			// Reassign autocommit to true
+			try {
+				con.setAutoCommit(true);
+			} catch (SQLException e) {
+				e.printStackTrace();
+				error += "\n Failed to assign connetion to AutoCommit(true).";
+			}
+
+			// Reassign isolation
+			try {
+				con.setTransactionIsolation(originalIsolation);
+			} catch (SQLException e) {
+				e.printStackTrace();
+				error += "\n Could not reassign isolation";
+			}
+		}
+
+
+		return error;
 	}
 
     public void closeDBConnection() {
@@ -623,7 +765,7 @@ public class LibraryModel {
     	return "Delete Book";
     }
 
-    class PauseDialog extends JDialog {
+    class PauseDialog extends JDialog{
         private boolean okButtonClicked = false;
 
         String introText = "Press okay to unpause the program";
@@ -661,6 +803,7 @@ public class LibraryModel {
     		public void actionPerformed(ActionEvent e) {
     		    okButtonClicked = true;
     		    setVisible(false);
+    		    LibraryModel.this.setPaused(false);
     		}
     	    });
 
@@ -707,4 +850,8 @@ public class LibraryModel {
     	setVisible(true);
         }
     }
+
+	protected void setPaused(boolean b) {
+		paused = b;
+	}
 }
