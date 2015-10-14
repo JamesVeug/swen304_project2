@@ -754,15 +754,83 @@ public class LibraryModel {
     }
 
     public String deleteCus(int customerID) {
-    	return "Delete Customer";
+
+    	String delete = "DELETE FROM customer "
+    			      + "WHERE customerid="+customerID;
+
+    	String cust_delete = "DELETE FROM cust_book "
+			      + "WHERE customerid="+customerID;
+
+
+		try {
+			Statement stmt = con.createStatement();
+			stmt.executeUpdate(cust_delete);
+			Statement stmt2 = con.createStatement();
+			stmt2.executeUpdate(delete);
+
+			return "Deleted customer " + customerID;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+    	return "Customer could not be deleted!";
     }
 
     public String deleteAuthor(int authorID) {
-    	return "Delete Author";
+
+    	String delete = "DELETE FROM author "
+    			      + "WHERE authorid="+authorID;
+
+    	String foreign_delete = "DELETE FROM book_author "
+			      + "WHERE authorid="+authorID;
+
+
+		try {
+			Statement stmt = con.createStatement();
+			stmt.executeUpdate(foreign_delete);
+			Statement stmt2 = con.createStatement();
+			stmt2.executeUpdate(delete);
+
+			return "Deleted author " + authorID;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+    	return "Author could not be deleted!";
     }
 
     public String deleteBook(int isbn) {
-    	return "Delete Book";
+
+    	String delete = "DELETE FROM book "
+    			      + "WHERE isbn="+isbn;
+
+    	String foreign_delete = "DELETE FROM book_author "
+			      + "WHERE isbn="+isbn;
+
+    	String cust_delete = "DELETE FROM cust_book "
+			      + "WHERE isbn="+isbn;
+
+
+		try {
+			Statement stmt = con.createStatement();
+			stmt.executeUpdate(foreign_delete);
+			Statement stmt2 = con.createStatement();
+			stmt2.executeUpdate(cust_delete);
+			Statement stmt3 = con.createStatement();
+			stmt3.executeUpdate(delete);
+
+			return "Deleted book " + isbn;
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+    	return "Book could not be deleted!";
     }
 
     class PauseDialog extends JDialog{
