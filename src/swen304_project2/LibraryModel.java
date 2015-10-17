@@ -580,7 +580,7 @@ public class LibraryModel {
 				}
 			}
 
-			// Reassign autocommit to true
+			// Reassign autocommit to true to confirm all changes
 			try {
 				con.setAutoCommit(true);
 			} catch (SQLException e) {
@@ -601,6 +601,9 @@ public class LibraryModel {
 		return error;
     }
 
+    /**
+     * @deprecated Does not work. Freezes the program.
+     */
     public void popupDialog() {
     	setPaused(true);
     	PauseDialog d = new PauseDialog();

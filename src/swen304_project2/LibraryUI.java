@@ -113,6 +113,7 @@ public class LibraryUI extends JFrame {
 
 	// Show ourselves
         setVisible(true);
+        //model.popupDialog();
     }
 
     private void initActions() {
