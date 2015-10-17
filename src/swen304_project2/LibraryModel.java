@@ -256,7 +256,6 @@ public class LibraryModel {
 			return "Show Author:\n" + authorID + " - " + q_name + " " + q_surname +
 					"\nBooks written:\n" + finalRow;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -293,7 +292,6 @@ public class LibraryModel {
 
 			return result;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -421,7 +419,6 @@ public class LibraryModel {
 
 			return result;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -443,7 +440,7 @@ public class LibraryModel {
 
     	String error = null;
 
-    	String date = day + "-" + month + "-" + year;
+    	String date = year + "-" + month + "-" + day;
 
     	// Check if customer exists
     	String checkCustomerExists = showCustomer(customerID);
@@ -466,13 +463,39 @@ public class LibraryModel {
     	PreparedStatement insert_stmt = null; // Inserting new elements into table
 		try {
 
+			// Set up connection
+			con.setAutoCommit(false);
+	    	con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
 			//
+	    	// Select numLeft of book
+	    	//
+	    	String getNumLeft = "SELECT title, numLeft, f_name, l_name from book Natural Join customer where isbn="+isbn+" AND customerid="+customerID;
+	    	select_stmt = con.prepareStatement(getNumLeft);
+	    	con.commit();
+
+	    	ResultSet rs = select_stmt.executeQuery();
+	    	String title = "";
+	    	String fname = "";
+	    	String lname = "";
+	    	int numLeft = -1;
+	    	while(rs.next()){
+	    		numLeft = rs.getInt("numLeft");
+	    		title = rs.getString("title").trim();
+	    		lname = rs.getString("l_name").trim();
+	    		fname = rs.getString("f_name").trim();
+	    	}
+
+	    	// Make sure we have boosk available
+	    	if( numLeft < 1 ){
+	    		throw new RuntimeException("Borrow Book: \n\tNo copies available for book " + isbn);
+	    	}
+	    	numLeft--;
+
+	    	//
 			// Insert into cust_books
 			//
 	    	String insert="INSERT INTO cust_book " + "VALUES ("+isbn+",'"+date+"',"+customerID+")";
-
-	    	con.setAutoCommit(false);
-	    	con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 	    	insert_stmt = con.prepareStatement(insert);
 	    	int insertChanges = insert_stmt.executeUpdate();
 	    	con.commit();
@@ -480,29 +503,8 @@ public class LibraryModel {
 
 			// Successful insert
 	    	if( insertChanges == 0 ){
-	    		throw new RuntimeException("Failed to Borrow book.");
+	    		throw new RuntimeException("Borrow Book: \n\tFailed to Borrow book.");
 	    	}
-
-
-	    	//
-	    	// Select numLeft of book
-	    	//
-	    	String getNumLeft = "SELECT numLeft from book where isbn= " + isbn;
-	    	select_stmt = con.prepareStatement(getNumLeft);
-	    	con.commit();
-
-	    	ResultSet rs = select_stmt.executeQuery();
-	    	int numLeft = -1;
-	    	while(rs.next()){
-	    		numLeft = rs.getInt("numLeft");
-	    	}
-
-	    	// Make sure we have boosk available
-	    	if( numLeft < 1 ){
-	    		throw new RuntimeException("No books available for this book.");
-	    	}
-	    	numLeft--;
-
 
 	    	//
 	    	// Update Book num left
@@ -518,6 +520,9 @@ public class LibraryModel {
 	    	}
 	    	else{
 	    		error = "Successfuly borrowed book.";
+	    		error += "\n\tBook: (" + title + ")";
+	    		error += "\n\tLoaned To: (" + fname + " " + lname + ")";
+	    		error += "\n\tDue date: (" + day + " " + month + year + ")";
 	    		error += "\n\t" + numLeft + " copies left.";
 		    	con.commit();
 	    	}
@@ -527,7 +532,7 @@ public class LibraryModel {
 			// Display proper message
 			String message = e.getMessage().trim();
 			if( message.startsWith("ERROR: duplicate key value violates unique constraint \"cust_book_pkey\"")){
-				error = "Book with isbn " + isbn + " is already being borrowed.";
+				error = "Book with isbn " + isbn + " is already being borrowed by this customer.";
 			}
 			else if( message.startsWith("ERROR: insert or update on table \"cust_book\" violates foreign key constraint")){
 				error = "Book with isbn " + isbn + " does not exist.";
@@ -540,9 +545,8 @@ public class LibraryModel {
 
 			// Rollback
 			try {
-				if(con != null ){
-					con.rollback();
-				}
+
+				con.rollback();
 			} catch (SQLException e1) {
 				e1.printStackTrace();
 				error += "\n Failed to rollback";
@@ -629,24 +633,24 @@ public class LibraryModel {
     	// Attempt to Borrow the book
     	PreparedStatement update_stmt = null; // Update numLeft
     	PreparedStatement select_stmt = null; // Checking numLeft of book in table
-    	PreparedStatement insert_stmt = null; // Inserting new elements into table
+    	PreparedStatement delete_stmt = null; // Inserting new elements into table
 		try {
 
 			//
 			// Insert into cust_books
 			//
-	    	String delete="DELETE FROM cust_book " + "WHERE isbn="+isbn+",AND customerid="+customerid+")";
+	    	String delete="DELETE FROM cust_book " + "WHERE isbn="+isbn+" AND customerid="+customerid+"";
 
 	    	con.setAutoCommit(false);
 	    	con.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-	    	insert_stmt = con.prepareStatement(delete);
-	    	int deleteChanges = insert_stmt.executeUpdate();
+	    	delete_stmt = con.prepareStatement(delete);
+	    	int deleteChanges = delete_stmt.executeUpdate();
 	    	con.commit();
 
 
-			// Successful insert
+			// Check if we delted the line
 	    	if( deleteChanges == 0 ){
-	    		throw new RuntimeException("Failed to Return book.");
+	    		throw new RuntimeException("Return Book\n\tBook " + isbn + " not borrowed by customer " + customerid);
 	    	}
 
 
@@ -675,10 +679,10 @@ public class LibraryModel {
 
 	    	// Successful update
 	    	if( updateChanges == 0 ){
-	    		throw new RuntimeException("Failed to Increase number of copies left.");
+	    		throw new RuntimeException("Return Book\n\tFailed to Increase number of copies left.");
 	    	}
 	    	else{
-	    		error = "Successfuly returned book.";
+	    		error = "Successfuly returned book " + isbn + " for customer " + customerid;
 	    		error += "\n\t" + numLeft + " copies left.";
 		    	con.commit();
 	    	}
@@ -693,9 +697,7 @@ public class LibraryModel {
 
 			// Rollback
 			try {
-				if(con != null ){
-					con.rollback();
-				}
+				con.rollback();
 			} catch (SQLException e1) {
 				e1.printStackTrace();
 				error += "\n Failed to rollback";
@@ -704,9 +706,9 @@ public class LibraryModel {
 		finally{
 
 			// Close statements
-			if( insert_stmt != null ){
+			if( delete_stmt != null ){
 				try {
-					insert_stmt.close();
+					delete_stmt.close();
 				} catch (SQLException e) {
 					e.printStackTrace();
 					error += "\n Failed to close insert statement.";
@@ -751,6 +753,11 @@ public class LibraryModel {
 	}
 
     public void closeDBConnection() {
+    	try {
+			con.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
     }
 
     public String deleteCus(int customerID) {
@@ -770,7 +777,6 @@ public class LibraryModel {
 
 			return "Deleted customer " + customerID;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -795,7 +801,6 @@ public class LibraryModel {
 
 			return "Deleted author " + authorID;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -825,7 +830,6 @@ public class LibraryModel {
 
 			return "Deleted book " + isbn;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
